@@ -19,12 +19,19 @@ import static org.hamcrest.Matchers.notNullValue;
 public class CreateOrderTest extends BaseTest {
     private User user;
     private String accessToken;
-    private final String VALID_INGREDIENT = "61c0c5a71d1f82001bdaaa6d";
+    private String validIngredient;
     private final String INVALID_INGREDIENT = "invalid_ingredient_hash";
 
     @Before
-    @Step("Создание тестового пользователя")
-    public void createTestUser() {
+    @Step("Создание тестового пользователя и получение валидного ингредиента")
+    public void setUp() {
+        // Создание пользователя
+        createTestUser();
+        // Получение валидного ингредиента из API
+        validIngredient = getValidIngredient();
+    }
+
+    private void createTestUser() {
         user = new User(
             "order" + System.currentTimeMillis() + "@test.com",
             "password123",
@@ -39,10 +46,20 @@ public class CreateOrderTest extends BaseTest {
         accessToken = response.path("accessToken");
     }
 
+    @Step("Получение валидного ингредиента")
+    private String getValidIngredient() {
+        Response response = given()
+            .spec(requestSpec)
+            .when()
+            .get(ApiConstants.INGREDIENTS_PATH);
+        
+        return response.path("data[0]._id");
+    }
+
     @Test
     @Description("Создание заказа с авторизацией")
     public void createOrderWithAuthTest() {
-        Order order = new Order(Arrays.asList(VALID_INGREDIENT));
+        Order order = new Order(Arrays.asList(validIngredient));
         Response response = createOrderWithAuth(order);
 
         response.then()
@@ -54,7 +71,7 @@ public class CreateOrderTest extends BaseTest {
     @Test
     @Description("Создание заказа без авторизации")
     public void createOrderWithoutAuthTest() {
-        Order order = new Order(Arrays.asList(VALID_INGREDIENT));
+        Order order = new Order(Arrays.asList(validIngredient));
         Response response = createOrderWithoutAuth(order);
 
         response.then()
